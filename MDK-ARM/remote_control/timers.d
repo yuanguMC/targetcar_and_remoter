@@ -1,0 +1,15 @@
+remote_control\timers.o: ../Middlewares/Third_Party/FreeRTOS/Source/timers.c
+remote_control\timers.o: C:\Users\ROG\AppData\Local\Keil_v5\ARM\AC5\Bin\..\include\stdlib.h
+remote_control\timers.o: ../Middlewares/Third_Party/FreeRTOS/Source/include/FreeRTOS.h
+remote_control\timers.o: C:\Users\ROG\AppData\Local\Keil_v5\ARM\AC5\Bin\..\include\stddef.h
+remote_control\timers.o: C:\Users\ROG\AppData\Local\Keil_v5\ARM\AC5\Bin\..\include\stdint.h
+remote_control\timers.o: ../Inc/FreeRTOSConfig.h
+remote_control\timers.o: ../Middlewares/Third_Party/FreeRTOS/Source/include/projdefs.h
+remote_control\timers.o: ../Middlewares/Third_Party/FreeRTOS/Source/include/portable.h
+remote_control\timers.o: ../Middlewares/Third_Party/FreeRTOS/Source/include/deprecated_definitions.h
+remote_control\timers.o: ../Middlewares/Third_Party/FreeRTOS/Source/portable/RVDS/ARM_CM4F/portmacro.h
+remote_control\timers.o: ../Middlewares/Third_Party/FreeRTOS/Source/include/mpu_wrappers.h
+remote_control\timers.o: ../Middlewares/Third_Party/FreeRTOS/Source/include/task.h
+remote_control\timers.o: ../Middlewares/Third_Party/FreeRTOS/Source/include/list.h
+remote_control\timers.o: ../Middlewares/Third_Party/FreeRTOS/Source/include/queue.h
+remote_control\timers.o: ../Middlewares/Third_Party/FreeRTOS/Source/include/timers.h
