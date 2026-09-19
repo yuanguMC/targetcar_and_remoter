@@ -16,6 +16,8 @@ extern float   move_speed           ;  // float 0 : 移动速度
 extern float   rotation_speed       ;  // float 1 : 旋转速度
 extern float   lr_move_sensitivity  ;  // float 2 : 左右移动灵敏度
 
+extern uint8_t ReceiveFlag;
+
 
 void nrf24l01_recive_init(void);
 void nrf24l01_recive_process(void);

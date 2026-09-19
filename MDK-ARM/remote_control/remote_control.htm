@@ -3,7 +3,7 @@
 <title>Static Call Graph - [remote_control\remote_control.axf]</title></head>
 <body><HR>
 <H1>Static Call Graph for image remote_control\remote_control.axf</H1><HR>
-<BR><P>#&#060CALLGRAPH&#062# ARM Linker, 5060960: Last Updated: Sun Sep 13 10:45:45 2026
+<BR><P>#&#060CALLGRAPH&#062# ARM Linker, 5060960: Last Updated: Sat Sep 19 14:17:48 2026
 <BR><P>
 <H3>Maximum Stack Usage =        240 bytes + Unknown(Functions without stacksize, Cycles, Untraceable Function Pointers)</H3><H3>
 Call chain for Maximum Stack Depth:</H3>
@@ -1333,7 +1333,7 @@ Global Symbols
 <BR>[Called By]<UL><LI><a href="#[e7]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;NRF24L01_Receive
 </UL>
 
-<P><STRONG><a name="[e7]"></a>NRF24L01_Receive</STRONG> (Thumb, 84 bytes, Stack size 16 bytes, nrf24l01.o(i.NRF24L01_Receive))
+<P><STRONG><a name="[e7]"></a>NRF24L01_Receive</STRONG> (Thumb, 94 bytes, Stack size 16 bytes, nrf24l01.o(i.NRF24L01_Receive))
 <BR><BR>[Stack]<UL><LI>Max Depth = 160<LI>Call Chain = NRF24L01_Receive &rArr; NRF24L01_Init &rArr; NRF24L01_WriteRegs &rArr; NRF24L01_SPI_SwapByte &rArr; HAL_SPI_TransmitReceive &rArr; SPI_EndRxTxTransaction &rArr; SPI_WaitFlagStateUntilTimeout
 </UL>
 <BR>[Calls]<UL><LI><a href="#[e1]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;NRF24L01_WriteReg
@@ -1611,7 +1611,7 @@ Global Symbols
 <BR>[Called By]<UL><LI><a href="#[72]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;__rt_entry_main
 </UL>
 
-<P><STRONG><a name="[10b]"></a>nrf24l01_recive_init</STRONG> (Thumb, 8 bytes, Stack size 8 bytes, nrf24l01_recive.o(i.nrf24l01_recive_init))
+<P><STRONG><a name="[10b]"></a>nrf24l01_recive_init</STRONG> (Thumb, 14 bytes, Stack size 8 bytes, nrf24l01_recive.o(i.nrf24l01_recive_init))
 <BR><BR>[Stack]<UL><LI>Max Depth = 152<LI>Call Chain = nrf24l01_recive_init &rArr; NRF24L01_Init &rArr; NRF24L01_WriteRegs &rArr; NRF24L01_SPI_SwapByte &rArr; HAL_SPI_TransmitReceive &rArr; SPI_EndRxTxTransaction &rArr; SPI_WaitFlagStateUntilTimeout
 </UL>
 <BR>[Calls]<UL><LI><a href="#[e0]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;NRF24L01_Init
@@ -1635,7 +1635,7 @@ Global Symbols
 <BR>[Called By]<UL><LI><a href="#[66]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;chassis_task
 </UL>
 
-<P><STRONG><a name="[107]"></a>nrf24l01_recive_process</STRONG> (Thumb, 146 bytes, Stack size 8 bytes, nrf24l01_recive.o(i.nrf24l01_recive_process))
+<P><STRONG><a name="[107]"></a>nrf24l01_recive_process</STRONG> (Thumb, 140 bytes, Stack size 8 bytes, nrf24l01_recive.o(i.nrf24l01_recive_process))
 <BR><BR>[Stack]<UL><LI>Max Depth = 168<LI>Call Chain = nrf24l01_recive_process &rArr; NRF24L01_Receive &rArr; NRF24L01_Init &rArr; NRF24L01_WriteRegs &rArr; NRF24L01_SPI_SwapByte &rArr; HAL_SPI_TransmitReceive &rArr; SPI_EndRxTxTransaction &rArr; SPI_WaitFlagStateUntilTimeout
 </UL>
 <BR>[Calls]<UL><LI><a href="#[e7]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;NRF24L01_Receive

@@ -17,20 +17,23 @@ float   lr_move_sensitivity  = 0.0f;    // float 2 : 左右移动灵敏度
 static uint8_t rx_buffer[NRF24L01_RX_PACKET_WIDTH];
 static volatile uint8_t rx_pending = 0;
 static uint32_t last_valid_rx_tick = 0;
+uint8_t ReceiveFlag;
 
 void nrf24l01_recive_init(void) { 
     NRF24L01_Init();
+    ReceiveFlag=0;
 }
 
 //基于中断的数据接收触发的数据处理
 void nrf24l01_recive_process(void)
 {
-    if (!rx_pending) {
-        return;
-    }
+    // if (!rx_pending) {
+    //     return;
+    // }
 
-    rx_pending = 0;
-    if (NRF24L01_Receive() != 1) {
+    // rx_pending = 0;
+    ReceiveFlag=NRF24L01_Receive();
+    if ( ReceiveFlag!= 1) {
         return;
     }
 

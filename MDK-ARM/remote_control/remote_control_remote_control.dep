@@ -64,7 +64,7 @@ I (../applications/struct_typedef.h)(0x63128736)
 I (../bsp/boards/bsp_rc.h)(0x63128736)
 I (../bsp/boards/struct_typedef.h)(0x63128736)
 I (../bsp/boards/bsp_can.h)(0x63128736)
-I (../applications/nrf24l01_recive.h)(0x6AA4BED5)
+I (../applications/nrf24l01_recive.h)(0x6AAD2807)
 I (../bsp/boards/nrf24l01.h)(0x6AA271C3)
 I (../bsp/boards/NRF24L01_Define.h)(0x6856A781)
 F (../Src/gpio.c)(0x6AA262BF)(--c99 -c --cpu Cortex-M4.fp.sp -g -O0 --apcs=interwork --split_sections -I ../Inc -I ../Drivers/STM32F4xx_HAL_Driver/Inc -I ../Drivers/STM32F4xx_HAL_Driver/Inc/Legacy -I ../Drivers/CMSIS/Device/ST/STM32F4xx/Include -I ../Drivers/CMSIS/Include -I ../bsp/boards -I ../applications -I ../Middlewares/Third_Party/FreeRTOS/Source/include -I ../Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS -I ../Middlewares/Third_Party/FreeRTOS/Source/portable/RVDS/ARM_CM4F-I.\RTE\_remote_control-IC:\Users\ROG\AppData\Local\Arm\Packs\ARM\CMSIS\6.3.0\CMSIS\Core\Include-D__UVISION_VERSION="539" -D_RTE_ -DSTM32F407xx -D_RTE_ -DUSE_HAL_DRIVER -DSTM32F407xx -DUSE_HAL_DRIVER -DSTM32F407xx-o remote_control\gpio.o --omf_browse remote_control\gpio.crf --depend remote_control\gpio.d)
@@ -578,7 +578,7 @@ I (../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h)(0x6AA14557)
 I (../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim_ex.h)(0x6AA14557)
 I (../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_uart.h)(0x6AA14557)
 I (C:\Users\ROG\AppData\Local\Keil_v5\ARM\AC5\include\string.h)(0x5E8E3CC2)
-F (..\bsp\boards\NRF24L01.c)(0x6AA271C3)(--c99 -c --cpu Cortex-M4.fp.sp -g -O0 --apcs=interwork --split_sections -I ../Inc -I ../Drivers/STM32F4xx_HAL_Driver/Inc -I ../Drivers/STM32F4xx_HAL_Driver/Inc/Legacy -I ../Drivers/CMSIS/Device/ST/STM32F4xx/Include -I ../Drivers/CMSIS/Include -I ../bsp/boards -I ../applications -I ../Middlewares/Third_Party/FreeRTOS/Source/include -I ../Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS -I ../Middlewares/Third_Party/FreeRTOS/Source/portable/RVDS/ARM_CM4F-I.\RTE\_remote_control-IC:\Users\ROG\AppData\Local\Arm\Packs\ARM\CMSIS\6.3.0\CMSIS\Core\Include-D__UVISION_VERSION="539" -D_RTE_ -DSTM32F407xx -D_RTE_ -DUSE_HAL_DRIVER -DSTM32F407xx -DUSE_HAL_DRIVER -DSTM32F407xx-o remote_control\nrf24l01.o --omf_browse remote_control\nrf24l01.crf --depend remote_control\nrf24l01.d)
+F (..\bsp\boards\NRF24L01.c)(0x6AAE2907)(--c99 -c --cpu Cortex-M4.fp.sp -g -O0 --apcs=interwork --split_sections -I ../Inc -I ../Drivers/STM32F4xx_HAL_Driver/Inc -I ../Drivers/STM32F4xx_HAL_Driver/Inc/Legacy -I ../Drivers/CMSIS/Device/ST/STM32F4xx/Include -I ../Drivers/CMSIS/Include -I ../bsp/boards -I ../applications -I ../Middlewares/Third_Party/FreeRTOS/Source/include -I ../Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS -I ../Middlewares/Third_Party/FreeRTOS/Source/portable/RVDS/ARM_CM4F-I.\RTE\_remote_control-IC:\Users\ROG\AppData\Local\Arm\Packs\ARM\CMSIS\6.3.0\CMSIS\Core\Include-D__UVISION_VERSION="539" -D_RTE_ -DSTM32F407xx -D_RTE_ -DUSE_HAL_DRIVER -DSTM32F407xx -DUSE_HAL_DRIVER -DSTM32F407xx-o remote_control\nrf24l01.o --omf_browse remote_control\nrf24l01.crf --depend remote_control\nrf24l01.d)
 I (..\bsp\boards\NRF24L01.h)(0x6AA271C3)
 I (..\bsp\boards\NRF24L01_Define.h)(0x6856A781)
 I (../Inc/main.h)(0x6AA262C1)
@@ -791,7 +791,7 @@ I (../Middlewares/Third_Party/FreeRTOS/Source/include/semphr.h)(0x6AA1450D)
 I (../Middlewares/Third_Party/FreeRTOS/Source/include/event_groups.h)(0x6AA1450D)
 I (../bsp/boards/bsp_can.h)(0x63128736)
 I (C:\Users\ROG\AppData\Local\Keil_v5\ARM\AC5\include\math.h)(0x5E8E3CC2)
-I (..\applications\nrf24l01_recive.h)(0x6AA4BED5)
+I (..\applications\nrf24l01_recive.h)(0x6AAD2807)
 I (../bsp/boards/nrf24l01.h)(0x6AA271C3)
 I (../bsp/boards/NRF24L01_Define.h)(0x6856A781)
 I (../Inc/main.h)(0x6AA262C1)
@@ -799,8 +799,8 @@ F (..\applications\user_lib.c)(0x6AA40E68)(--c99 -c --cpu Cortex-M4.fp.sp -g -O0
 I (..\applications\user_lib.h)(0x685CF593)
 I (..\applications\struct_typedef.h)(0x63128736)
 F (..\applications\bluetooth_receive.c)(0x6AA274FC)(--c99 -c --cpu Cortex-M4.fp.sp -g -O0 --apcs=interwork --split_sections -I ../Inc -I ../Drivers/STM32F4xx_HAL_Driver/Inc -I ../Drivers/STM32F4xx_HAL_Driver/Inc/Legacy -I ../Drivers/CMSIS/Device/ST/STM32F4xx/Include -I ../Drivers/CMSIS/Include -I ../bsp/boards -I ../applications -I ../Middlewares/Third_Party/FreeRTOS/Source/include -I ../Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS -I ../Middlewares/Third_Party/FreeRTOS/Source/portable/RVDS/ARM_CM4F-I.\RTE\_remote_control-IC:\Users\ROG\AppData\Local\Arm\Packs\ARM\CMSIS\6.3.0\CMSIS\Core\Include-D__UVISION_VERSION="539" -D_RTE_ -DSTM32F407xx -D_RTE_ -DUSE_HAL_DRIVER -DSTM32F407xx -DUSE_HAL_DRIVER -DSTM32F407xx-o remote_control\bluetooth_receive.o --omf_browse remote_control\bluetooth_receive.crf --depend remote_control\bluetooth_receive.d)
-F (..\applications\nrf24l01_recive.c)(0x6AA4BED5)(--c99 -c --cpu Cortex-M4.fp.sp -g -O0 --apcs=interwork --split_sections -I ../Inc -I ../Drivers/STM32F4xx_HAL_Driver/Inc -I ../Drivers/STM32F4xx_HAL_Driver/Inc/Legacy -I ../Drivers/CMSIS/Device/ST/STM32F4xx/Include -I ../Drivers/CMSIS/Include -I ../bsp/boards -I ../applications -I ../Middlewares/Third_Party/FreeRTOS/Source/include -I ../Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS -I ../Middlewares/Third_Party/FreeRTOS/Source/portable/RVDS/ARM_CM4F-I.\RTE\_remote_control-IC:\Users\ROG\AppData\Local\Arm\Packs\ARM\CMSIS\6.3.0\CMSIS\Core\Include-D__UVISION_VERSION="539" -D_RTE_ -DSTM32F407xx -D_RTE_ -DUSE_HAL_DRIVER -DSTM32F407xx -DUSE_HAL_DRIVER -DSTM32F407xx-o remote_control\nrf24l01_recive.o --omf_browse remote_control\nrf24l01_recive.crf --depend remote_control\nrf24l01_recive.d)
-I (..\applications\nrf24l01_recive.h)(0x6AA4BED5)
+F (..\applications\nrf24l01_recive.c)(0x6AAD2FA5)(--c99 -c --cpu Cortex-M4.fp.sp -g -O0 --apcs=interwork --split_sections -I ../Inc -I ../Drivers/STM32F4xx_HAL_Driver/Inc -I ../Drivers/STM32F4xx_HAL_Driver/Inc/Legacy -I ../Drivers/CMSIS/Device/ST/STM32F4xx/Include -I ../Drivers/CMSIS/Include -I ../bsp/boards -I ../applications -I ../Middlewares/Third_Party/FreeRTOS/Source/include -I ../Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS -I ../Middlewares/Third_Party/FreeRTOS/Source/portable/RVDS/ARM_CM4F-I.\RTE\_remote_control-IC:\Users\ROG\AppData\Local\Arm\Packs\ARM\CMSIS\6.3.0\CMSIS\Core\Include-D__UVISION_VERSION="539" -D_RTE_ -DSTM32F407xx -D_RTE_ -DUSE_HAL_DRIVER -DSTM32F407xx -DUSE_HAL_DRIVER -DSTM32F407xx-o remote_control\nrf24l01_recive.o --omf_browse remote_control\nrf24l01_recive.crf --depend remote_control\nrf24l01_recive.d)
+I (..\applications\nrf24l01_recive.h)(0x6AAD2807)
 I (..\applications\struct_typedef.h)(0x63128736)
 I (../bsp/boards/nrf24l01.h)(0x6AA271C3)
 I (../bsp/boards/NRF24L01_Define.h)(0x6856A781)
