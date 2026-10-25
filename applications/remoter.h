@@ -5,7 +5,7 @@
 #include "nrf24l01_recive.h"
 
 void Remote_Init(void);
-void Remote_Task(void);
+void remote_task(void const * argument);
 void Remote_Send(void);
 void date_pack_process(void);
 

@@ -5,7 +5,7 @@
 typedef struct ASCIIFont {
   uint8_t h;
   uint8_t w;
-  uint8_t *chars;
+  const uint8_t *chars;
 } ASCIIFont;
 
 extern const ASCIIFont afont8x6;
@@ -38,7 +38,7 @@ typedef struct Image {
   const uint8_t *data; // 图片数据
 } Image;
 
-extern const Font bilibiliImg;
+extern const Image bilibiliImg;
 extern const Font font16x16_1;
 extern const Font font16x16_2;
 

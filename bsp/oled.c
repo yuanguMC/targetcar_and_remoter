@@ -48,7 +48,7 @@ uint8_t OLED_GRAM[OLED_PAGE][OLED_COLUMN];
  */
 void OLED_Send(uint8_t *data, uint8_t len)
 {
-  HAL_I2C_Master_Transmit(&hi2c1, OLED_ADDRESS, data, len, HAL_MAX_DELAY);
+  (void)HAL_I2C_Master_Transmit(&hi2c1, OLED_ADDRESS, data, len, 0XFFFF);
 }
 
 /**
@@ -56,7 +56,7 @@ void OLED_Send(uint8_t *data, uint8_t len)
  */
 void OLED_SendCmd(uint8_t cmd)
 {
-  static uint8_t sendBuffer[2] = {0};
+  uint8_t sendBuffer[2] = {0x00, 0};
   sendBuffer[1] = cmd;
   OLED_Send(sendBuffer, 2);
 }
@@ -76,7 +76,7 @@ void OLED_Init()
 
   OLED_SendCmd(0xB0);
 
-  OLED_SendCmd(0xC8);
+  OLED_SendCmd(0xC0);
 
   OLED_SendCmd(0x00);
   OLED_SendCmd(0x10);
@@ -86,7 +86,7 @@ void OLED_Init()
   OLED_SendCmd(0x81);
 
   OLED_SendCmd(0x7F);
-  OLED_SendCmd(0xA1);
+  OLED_SendCmd(0xA0);
 
   OLED_SendCmd(0xA6);
   OLED_SendCmd(0xA8);
@@ -173,12 +173,15 @@ void OLED_NewFrame()
 void OLED_ShowFrame()
 {
   static uint8_t sendBuffer[OLED_COLUMN + 1];
+  uint8_t commandBuffer[4];
   sendBuffer[0] = 0x40;
   for (uint8_t i = 0; i < OLED_PAGE; i++)
   {
-    OLED_SendCmd(0xB0 + i); // 设置页地址
-    OLED_SendCmd(0x00);     // 设置列地址低4位
-    OLED_SendCmd(0x10);     // 设置列地址高4位
+    commandBuffer[0] = 0x00;
+    commandBuffer[1] = 0xB0 + i; // 设置页地址
+    commandBuffer[2] = 0x00;     // 设置列地址低4位
+    commandBuffer[3] = 0x10;     // 设置列地址高4位
+    OLED_Send(commandBuffer, sizeof(commandBuffer));
     memcpy(sendBuffer + 1, OLED_GRAM[i], OLED_COLUMN);
     OLED_Send(sendBuffer, OLED_COLUMN + 1);
   }
@@ -314,18 +317,26 @@ void OLED_SetBits(uint8_t x, uint8_t y, uint8_t data, OLED_ColorMode color)
  */
 void OLED_SetBlock(uint8_t x, uint8_t y, const uint8_t *data, uint8_t w, uint8_t h, OLED_ColorMode color)
 {
+  uint8_t sourceWidth = w;
+  if (data == NULL || x >= OLED_COLUMN || y >= OLED_ROW)
+    return;
+  if (w > OLED_COLUMN - x)
+    w = OLED_COLUMN - x;
+  if (h > OLED_ROW - y)
+    h = OLED_ROW - y;
+
   uint8_t fullRow = h / 8; // 完整的行数
   uint8_t partBit = h % 8; // 不完整的字节中的有效位数
   for (uint8_t i = 0; i < w; i++)
   {
     for (uint8_t j = 0; j < fullRow; j++)
     {
-      OLED_SetBits(x + i, y + j * 8, data[i + j * w], color);
+      OLED_SetBits(x + i, y + j * 8, data[i + j * sourceWidth], color);
     }
   }
   if (partBit)
   {
-    uint16_t fullNum = w * fullRow; // 完整的字节数
+    uint16_t fullNum = sourceWidth * fullRow; // 完整的字节数
     for (uint8_t i = 0; i < w; i++)
     {
       OLED_SetBits_Fine(x + i, y + (fullRow * 8), data[fullNum + i], partBit, color);
@@ -656,6 +667,10 @@ void OLED_DrawImage(uint8_t x, uint8_t y, const Image *img, OLED_ColorMode color
  */
 void OLED_PrintASCIIChar(uint8_t x, uint8_t y, char ch, const ASCIIFont *font, OLED_ColorMode color)
 {
+  if (font == NULL || font->chars == NULL)
+    return;
+  if (ch < ' ' || ch > '~')
+    ch = '?';
   OLED_SetBlock(x, y, font->chars + (ch - ' ') * (((font->h + 7) / 8) * font->w), font->w, font->h, color);
 }
 
@@ -667,12 +682,14 @@ void OLED_PrintASCIIChar(uint8_t x, uint8_t y, char ch, const ASCIIFont *font, O
  * @param font 字体
  * @param color 颜色
  */
-void OLED_PrintASCIIString(uint8_t x, uint8_t y, char *str, const ASCIIFont *font, OLED_ColorMode color)
+void OLED_PrintASCIIString(uint8_t x, uint8_t y, const char *str, const ASCIIFont *font, OLED_ColorMode color)
 {
-  uint8_t x0 = x;
-  while (*str)
+  uint16_t x0 = x;
+  if (str == NULL || font == NULL || font->w == 0)
+    return;
+  while (*str && x0 < OLED_COLUMN)
   {
-    OLED_PrintASCIIChar(x0, y, *str, font, color);
+    OLED_PrintASCIIChar((uint8_t)x0, y, *str, font, color);
     x0 += font->w;
     str++;
   }
@@ -681,25 +698,34 @@ void OLED_PrintASCIIString(uint8_t x, uint8_t y, char *str, const ASCIIFont *fon
 /**
  * @brief 获取UTF-8编码的字符长度
  */
-uint8_t _OLED_GetUTF8Len(char *string)
+static uint8_t OLED_GetUTF8Len(const char *string)
 {
-  if ((string[0] & 0x80) == 0x00)
-  {
+  const uint8_t first = (uint8_t)string[0];
+  uint8_t length;
+
+  if (first < 0x80)
     return 1;
-  }
-  else if ((string[0] & 0xE0) == 0xC0)
+  if (first >= 0xC2 && first <= 0xDF)
+    length = 2;
+  else if (first >= 0xE0 && first <= 0xEF)
+    length = 3;
+  else if (first >= 0xF0 && first <= 0xF4)
+    length = 4;
+  else
+    return 0;
+
+  for (uint8_t i = 1; i < length; i++)
   {
-    return 2;
+    const uint8_t next = (uint8_t)string[i];
+    if (next == '\0' || (next & 0xC0) != 0x80)
+      return 0;
+    if (i == 1 && ((first == 0xE0 && next < 0xA0) ||
+                   (first == 0xED && next >= 0xA0) ||
+                   (first == 0xF0 && next < 0x90) ||
+                   (first == 0xF4 && next >= 0x90)))
+      return 0;
   }
-  else if ((string[0] & 0xF0) == 0xE0)
-  {
-    return 3;
-  }
-  else if ((string[0] & 0xF8) == 0xF0)
-  {
-    return 4;
-  }
-  return 0;
+  return length;
 }
 
 /**
@@ -726,29 +752,29 @@ uint8_t _OLED_GetUTF8Len(char *string)
  * 1. 编译器字符集设置为UTF-8
  * 2. 使用波特律动LED取模工具生成字模(https://led.baud-dance.com)
  */
-void OLED_PrintString(uint8_t x, uint8_t y, char *str, const Font *font, OLED_ColorMode color)
+void OLED_PrintString(uint8_t x, uint8_t y, const char *str, const Font *font, OLED_ColorMode color)
 {
-  uint16_t i = 0;                                       // 字符串索引
-  uint8_t oneLen = (((font->h + 7) / 8) * font->w) + 4; // 一个字模占多少字节
-  uint8_t found;                                        // 是否找到字模
-  uint8_t utf8Len;                                      // UTF-8编码长度
-  uint8_t *head;                                        // 字模头指针
-  while (str[i])
+  uint16_t i = 0; // 字符串索引
+  uint16_t x0 = x;
+  uint16_t oneLen;
+  if (str == NULL || font == NULL)
+    return;
+  oneLen = (((uint16_t)font->h + 7U) / 8U) * font->w + 4U;
+  while (str[i] && x0 < OLED_COLUMN)
   {
-    found = 0;
-    utf8Len = _OLED_GetUTF8Len(str + i);
+    uint8_t found = 0;
+    uint8_t utf8Len = OLED_GetUTF8Len(str + i);
+    const uint8_t *head;
     if (utf8Len == 0)
       break; // 有问题的UTF-8编码
 
-    // 寻找字符  TODO 优化查找算法, 二分查找或者hash
-    for (uint8_t j = 0; j < font->len; j++)
+    for (uint16_t j = 0; font->chars != NULL && j < font->len; j++)
     {
-      head = (uint8_t *)(font->chars) + (j * oneLen);
+      head = font->chars + (j * oneLen);
       if (memcmp(str + i, head, utf8Len) == 0)
       {
-        OLED_SetBlock(x, y, head + 4, font->w, font->h, color);
-        // 移动光标
-        x += font->w;
+        OLED_SetBlock((uint8_t)x0, y, head + 4, font->w, font->h, color);
+        x0 += font->w;
         i += utf8Len;
         found = 1;
         break;
@@ -760,15 +786,28 @@ void OLED_PrintString(uint8_t x, uint8_t y, char *str, const Font *font, OLED_Co
     {
       if (utf8Len == 1)
       {
-        OLED_PrintASCIIChar(x, y, str[i], font->ascii, color);
-        // 移动光标
-        x += font->ascii->w;
+        if (font->ascii != NULL)
+        {
+          OLED_PrintASCIIChar((uint8_t)x0, y, str[i], font->ascii, color);
+          x0 += font->ascii->w;
+        }
+        else
+        {
+          x0 += font->w;
+        }
         i += utf8Len;
       }
       else
       {
-        OLED_PrintASCIIChar(x, y, ' ', font->ascii, color);
-        x += font->ascii->w;
+        if (font->ascii != NULL)
+        {
+          OLED_PrintASCIIChar((uint8_t)x0, y, ' ', font->ascii, color);
+          x0 += font->ascii->w;
+        }
+        else
+        {
+          x0 += font->w;
+        }
         i += utf8Len;
       }
     }

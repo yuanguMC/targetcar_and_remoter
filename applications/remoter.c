@@ -1,30 +1,35 @@
-/////////////////////////////////////////////遥控器主任务////////////////////////////////////////////
+/////////////////////////////////////////////遥控器主任务///////////////////////////////////////////////////////////////////////////////////
                                    
-//2026.9.12 v1.00                   Han          //通过中断读取按键状态,在循环任务处理后发送
+//2026.9.12 v1.00                   Han          //通过中断读取按键状态,在循环任务处理后发送，按键数据处理：调速按键进行计数，控制移动按键仅读取电平
 //2026.9.13 v1.01                   Han          //添加oled输出目标速度
 
-////////////////////////////////////////////////////////////////////////////////////////////////////
+//2026.9.13 v1.10                   Han          //遥控器可正常发送数据包
+//2026.9.20 v1.20                   Han          //由中断改为轮询，保留中断读取接口，按键检测稳定
+
+//2026.9.21 v1.30                   Han          //功能完备，OLED屏幕能使用，数据说明显示不全
+
+//2026.10.25 v1.31                  Han          //将旋转方法改为按下切换
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 #include "remoter.h"
 #include "main.h"
 #include <string.h>
 #include "cmsis_os.h"
-#include "oled_printf.h"
 
-void Remote_Task(void);          //遥控器主任务
 
 void Remote_Init(void);         //遥控器初始化
 void Remote_Send(void);         //发送数据包
 void date_pack_process(void);   //打包数据包
 
 /////////////////////全局变量////////////////////////////
-uint8_t tx_buffer[NRF24L01_TX_PACKET_WIDTH];
+uint8_t tx_buffer[NRF24L01_TX_PACKET_WIDTH]={0};
 
-#define MOVE_SPEED_STEP       0.05f
-#define ROTATION_SPEED_STEP   0.05f
-#define MOVE_SPEED_MAX        1.0f
-#define ROTATION_SPEED_MAX    1.0f
 
-static float clamp_float(float value, float min_value, float max_value)
+#define MOVE_SPEED_STEP       0.05f     //线速度加减的步长（rpm)
+#define ROTATION_SPEED_STEP   5.0f      //角速度加减的步长（rpm)
+#define MOVE_SPEED_MAX        1.0f      //线速度最大值（rpm）
+#define ROTATION_SPEED_MAX    100.0f    //角速度最大值（rpm）
+
+static float clamp_float(float value, float min_value, float max_value)         //限幅函数
 {
     if (value < min_value) {
         return min_value;
@@ -43,8 +48,8 @@ static void put_int16_le(uint8_t *buffer, int16_t value)
     buffer[1] = (uint8_t)(unsigned_value >> 8);
 }
 void Remote_Init(void){
-    nrf24l01_send_init();
     Key_Init();
+    nrf24l01_send_init();
 }
 
 void date_pack_process(void)
@@ -66,6 +71,24 @@ void date_pack_process(void)
     move_speed = clamp_float(move_speed, 0.0f, MOVE_SPEED_MAX);
     rotation_speed = clamp_float(rotation_speed, 0.0f, ROTATION_SPEED_MAX);
 
+    if (move_speed == 0.0f ) {
+        if (move_speed_zero_flag != 0U) {
+            Key_ResetMoveSpeedCounts();
+        }
+        move_speed_zero_flag = 0U;
+    } else {
+        move_speed_zero_flag = 1U;
+    }
+
+    if (rotation_speed == 0.0f ) {
+        if (rotation_speed_zero_flag != 0U) {
+            Key_ResetRotationSpeedCounts();
+        }
+        rotation_speed_zero_flag = 0U;
+    } else {
+        rotation_speed_zero_flag = 1U;
+    }
+
     memset(tx_buffer, 0, sizeof(tx_buffer));
     tx_buffer[0] = 0xA5;
     tx_buffer[1] = (uint8_t)((key_data[0] << 0) |
@@ -81,20 +104,18 @@ void date_pack_process(void)
 
 void Remote_Send(void)
 {
-    NRF24L01_WriteTxPayload(tx_buffer, NRF24L01_TX_PACKET_WIDTH);
-    NRF24L01_Send();
+    memcpy(NRF24L01_TxPacket, tx_buffer, NRF24L01_TX_PACKET_WIDTH);
+    SendFlag=NRF24L01_Send();
 }
 
-void Remote_Task(void)
+void remote_task(void const * argument)                 //遥控器任务
 {
     Remote_Init();
+    osDelay(1000);                                      //等待按键初始化及OLED初始化完成
     while(1)
     {
-    
         date_pack_process();   
         Remote_Send();
-        oled_printf(0,0,"当前速度:%.2f",move_speed);
-        oled_printf(0,16,"当前旋转:%.2f",rotation_speed);
-        osDelay(2);
+        osDelay(10);
     }
 }

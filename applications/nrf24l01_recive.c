@@ -13,6 +13,8 @@ float   move_speed      = 0.0f;    // float 0 : 移动速度
 float   rotation_speed  = 0.0f;    // float 1 : 旋转速度
 float   lr_move_sensitivity  = 0.0f;    // float 2 : 左右移动灵敏度
 
+uint8_t SendFlag;
+
 // 发送缓冲
 //static uint8_t tx_buffer[NRF24L01_RX_PACKET_WIDTH];
 static volatile uint8_t tx_pending = 0;
@@ -20,9 +22,19 @@ static volatile uint8_t tx_pending = 0;
 
 void nrf24l01_send_init(void) { 
     NRF24L01_Init();
+		SendFlag=0;
 }
 
-void nrf24l01_irq_callback(void)
+/**
+ * @brief NRF24L01 中断回调函数
+ * 
+ * 该函数在 NRF24L01 模块触发中断时被调用，用于标记数据发送挂起状态。
+ * 当接收到中断信号时，将 tx_pending 标志设置为 1，表示有待处理的数据发送任务。
+ * 
+ * @note 此函数通常在中断服务程序中被调用
+ * @note 使用 volatile 修饰的 tx_pending 变量确保在中断和主程序之间的正确同步
+ */
+void nrf24l01_irq_callback(void)                    
 {
     tx_pending = 1U;
 }

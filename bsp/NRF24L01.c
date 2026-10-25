@@ -565,15 +565,14 @@ uint8_t NRF24L01_Receive(void)
 	/*读取配置寄存器，保存至Config变量*/
 	Config = NRF24L01_ReadReg(NRF24L01_CONFIG);
 	
-	/*根据配置寄存器和状态寄存器的值，判断接收状态*/
-	if ((Config & 0x02) == 0x00)		//配置寄存器位1（PWR_UP）为0
+	/*根据配置寄存器和状态寄存器判断接收状态*/
+	if (Status == 0xFF || Config == 0xFF)		//SPI读回全为1，通常表示模块未连接或CSN/MISO异常
+	{
+		ReceiveFlag = 2;
+	}
+	else if ((Config & 0x02) == 0x00)		//配置寄存器位1（PWR_UP）为0
 	{
 		ReceiveFlag = 3;				//设备仍处于掉电模式，置标志位为3
-		NRF24L01_Init();				//接收出错，重新初始化一次设备，这样有助于设备从错误中恢复正常
-	}
-	else if ((Status & 0x30) == 0x30)	//状态寄存器位4（MAX_RT）和位5（TX_DS）同时为1
-	{
-		ReceiveFlag = 2;				//状态寄存器的值不合法，置标志位为2
 		NRF24L01_Init();				//接收出错，重新初始化一次设备，这样有助于设备从错误中恢复正常
 	}
 	else if ((Status & 0x40) == 0x40)	//状态寄存器位6（RX_DR）为1
@@ -592,6 +591,11 @@ uint8_t NRF24L01_Receive(void)
 	else
 	{
 		ReceiveFlag = 0;				//未接收到数据，置标志位为0
+		/*接收端不使用发送完成/最大重传标志，清除残留标志即可*/
+		if ((Status & 0x30) != 0)
+		{
+			NRF24L01_WriteReg(NRF24L01_STATUS, 0x30);
+		}
 	}
 	
 	/*返回接收标志位*/
