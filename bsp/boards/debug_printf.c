@@ -11,13 +11,13 @@ void debug_printf(UART_HandleTypeDef huart, const char *fmt, ...);
 
 
 /**
- * @brief Ê¹ÓÃ´®¿Ú·¢ËÍµ÷ÊÔĞÅÏ¢
+ * @brief ä½¿ç”¨ä¸²å£å‘é€è°ƒè¯•ä¿¡æ¯
  * 
- * @param fmt ¸ñÊ½»¯×Ö·û´®£¬Ö§³Öprintf·ç¸ñµÄ¸ñÊ½ËµÃ÷·û
- * @param ... ¿É±ä²ÎÊıÁĞ±í£¬Óë¸ñÊ½»¯×Ö·û´®ÖĞµÄÕ¼Î»·û¶ÔÓ¦
+ * @param fmt æ ¼å¼åŒ–å­—ç¬¦ä¸²ï¼Œæ”¯æŒprintfé£æ ¼çš„æ ¼å¼è¯´æ˜ç¬¦
+ * @param ... å¯å˜å‚æ•°åˆ—è¡¨ï¼Œä¸æ ¼å¼åŒ–å­—ç¬¦ä¸²ä¸­çš„å ä½ç¬¦å¯¹åº”
  * 
- * @note ÄÚ²¿Ê¹ÓÃ128×Ö½Ú»º³åÇø£¬³¬³¤ÄÚÈİ»á±»½Ø¶Ï
- * @note UART´«Êä³¬Ê±Ê±¼äÎª1000ms
+ * @note å†…éƒ¨ä½¿ç”¨128å­—èŠ‚ç¼“å†²åŒºï¼Œè¶…é•¿å†…å®¹ä¼šè¢«æˆªæ–­
+ * @note UARTä¼ è¾“è¶…æ—¶æ—¶é—´ä¸º1000ms
  */
 
 void debug_printf(UART_HandleTypeDef huart, const char *fmt, ...) {
@@ -26,7 +26,7 @@ void debug_printf(UART_HandleTypeDef huart, const char *fmt, ...) {
 			va_start(args, fmt);
 			vsnprintf(buffer, sizeof(buffer), fmt, args);
 			va_end(args);
-                HAL_UART_Transmit(&huart, (uint8_t*)buffer, strlen(buffer), 1000);
+                HAL_UART_Transmit(&huart, (uint8_t*)buffer, strlen(buffer), 10);
             
 }
 

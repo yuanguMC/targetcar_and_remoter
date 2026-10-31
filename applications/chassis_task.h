@@ -3,7 +3,6 @@
 #include "struct_typedef.h"
 #include "CAN_receive.h"
 #include "pid.h"
-#include "remote_control.h"
 #include "stm32f4xx_hal.h"
 #include "bluetooth_receive.h"
 
@@ -15,12 +14,8 @@
 //目标速度 * 比例 = 实际发送rpm
 #define RPM_FORWARD_RATIO 8883.0665912045f
 #define RPM_BACK_RATIO -8883.0665912045f
-#define RPM_RATIO  44.334f // 3 * 7 * 19
+#define RPM_RATIO  44.807f // 主动轮30，从动轮70，减速箱3591/187
 
-
-//拨杆通道号
-#define CHASSIS_RIGHT_LEVER 0
-#define CHASSIS_LEFT_LEVER 1
 
 //摇杆死区
 #define CHASSIS_RC_DEADLINE 50
@@ -63,12 +58,14 @@
 #define M15_MOTOR_SPEED_PID_MAX_OUT MAX_MOTOR_M15_CAN_CURRENT
 #define M15_MOTOR_SPEED_PID_MAX_IOUT 500.0f
 
-//云台旋转速度环PID
-#define ROTATION_MOTOR_SPEED_PID_KP 200.0f
-#define ROTATION_MOTOR_SPEED_PID_KI 0.1f
-#define ROTATION_MOTOR_SPEED_PID_KD 0.2f
-#define ROTATION_MOTOR_SPEED_PID_MAX_OUT 1000.0f
-#define ROTATION_MOTOR_SPEED_PID_MAX_IOUT 1000.0f
+// GM4310 云台速度环 PID，目标值和反馈值均为电机轴 rpm。
+// 初始值按 3.5 kg 低速负载估算，需结合实测响应继续整定。
+#define ROTATION_MOTOR_SPEED_PID_KP 10.0f
+#define ROTATION_MOTOR_SPEED_PID_KI 0.05f
+#define ROTATION_MOTOR_SPEED_PID_KD 0.0f
+#define ROTATION_MOTOR_SPEED_PID_MAX_OUT 10000.0f
+#define ROTATION_MOTOR_SPEED_PID_MAX_IOUT 10000.0f
+#define ROTATION_MOTOR_SPEED_ZERO_DEADBAND_RPM 1.0f
 
 typedef enum
 {
@@ -96,8 +93,6 @@ typedef struct
 
 typedef struct
 {
-  const RC_ctrl_t *chassis_RC;                        //底盘使用的遥控器指针
-	
   chassis_mode_e chassis_mode_1;                      //底盘控制状态机
   chassis_mode_e chassis_mode_2;                      //云台控制状态机
   chassis_mode_e last_chassis_mode;                   //底盘上次控制状态机
@@ -107,10 +102,10 @@ typedef struct
   pid_type_def rotation_motor_pid;                    //云台旋转电机pid
 
   fp32 vx;                           //底盘速度 前进方向 前为正，单位 m/s
-  fp32 wz;                           //底盘旋转角速度，逆时针为正 单位 转/s
+  fp32 wz;                           //云台输出轴转速，逆时针为正，单位 rpm
   fp32 v0_set;                      //底盘设定速度 前进方向 前为正，单位 m/s
   fp32 v1_set;                      //底盘设定速度 前进方向 前为正，单位 m/s
-  fp32 wz_set;                       //设定旋转速度，逆时针为正 单位 转/s
+  fp32 wz_set;                       //云台电机目标转速，逆时针为正，单位 rpm
 
   fp32 vx_max_speed;  //前进方向最大速度 单位m/s
   fp32 vx_min_speed;  //后退方向最大速度 单位m/s
@@ -140,13 +135,6 @@ extern chassis_move_t chassis_move;
   * @brief          底盘任务，间隔 2ms
   * @param[in]      pvParameters: 空
   * @retval         none
-  */
-extern void chassis_task(void const *pvParameters);
-
-/**
-  * @brief          根据遥控器通道值，计算纵向和横移速度
-  *                 
-  * @param[out]     vx_set: 纵向速度指针
   * @param[out]     vy_set: 横向速度指针
   * @param[out]     chassis_move_rc_to_vector: "chassis_move" 变量指针
   * @retval         none

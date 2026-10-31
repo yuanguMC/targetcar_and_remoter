@@ -1,19 +1,19 @@
 #include "chassis_task.h"
 #include "cmsis_os.h"
 #include "pid.h"
-#include "remote_control.h"
 #include "CAN_receive.h"
 #include "bsp_can.h"
 #include <math.h>
 #include "stm32f4xx_hal.h"
 #include "bluetooth_receive.h"
 #include "nrf24l01_recive.h"
+#include "debug_printf.h"
+#include "usart.h"
 
 fp32 fp32_constrain(fp32 Value, fp32 minValue, fp32 maxValue);
 int16_t soft_start(uint32_t elapsed, uint32_t duration, int16_t target_speed);
 
 void chassis_move_init(chassis_move_t *chassis_move_init);
-static void chassis_set_mode(chassis_move_t *chassis_move_mode);
 static void chassis_feedback_update(chassis_move_t *chassis_move_update);
 static void chassis_set_contorl(chassis_move_t *chassis_move_control);
 static void chassis_control_loop(chassis_move_t *chassis_move_control_loop);
@@ -53,14 +53,27 @@ void chassis_task(void const *pvParameters)
 		nrf24l01_recive_process();	//处理接收数据
 		nrf24l01_recive_link_lost_process();	//掉线处理
 
-		//设置底盘控制模式
-		chassis_set_mode(&chassis_move);
 		//数据更新
 		chassis_feedback_update(&chassis_move);   
 		//控制量设置
 		chassis_set_contorl(&chassis_move);		
 		//pid计算
 		chassis_control_loop(&chassis_move);
+		{
+			static uint32_t last_debug_tick = 0;
+			uint32_t current_tick = HAL_GetTick();
+			if ((uint32_t)(current_tick - last_debug_tick) >= 50U)
+			{
+				last_debug_tick = current_tick;
+				debug_printf(huart1, "spd:%d,%.1f,%d,%.1f,%d,%.1f\n",
+					chassis_move.motor_chassis_measure[0].rpm,
+					chassis_move.motor_chassis_measure[0].speed_set,
+					chassis_move.motor_chassis_measure[1].rpm,
+					chassis_move.motor_chassis_measure[1].speed_set,
+					chassis_move.rotation_motor_measure.speed,
+					chassis_move.rotation_motor_measure.speed_set);
+			}
+		}
 		// M15 CAN 控制帧发送的是电流，不能直接发送 rpm 设定值
 		CAN_cmd_chassis(chassis_move.motor_chassis_measure[0].give_current,
 						chassis_move.motor_chassis_measure[1].give_current);
@@ -77,8 +90,6 @@ const static fp32 rotation_speed_pid[3] = {ROTATION_MOTOR_SPEED_PID_KP, ROTATION
 
 void chassis_move_init(chassis_move_t *chassis_move_init)
 {
-	chassis_move_init->chassis_RC = get_remote_control_point();
-
 	//底盘电机1
 	chassis_move_init->motor_chassis_measure[0].motor_measure = get_chassis_motor_1_measure_point();
 	PID_init(&chassis_move_init->chassis_motor_pid[0], PID_POSITION, motor_1_speed_pid, M15_MOTOR_SPEED_PID_MAX_OUT, M15_MOTOR_SPEED_PID_MAX_IOUT);
@@ -95,37 +106,6 @@ void chassis_move_init(chassis_move_t *chassis_move_init)
 	
 	chassis_move_init->wz_max_speed = NORMAL_MAX_ROTATION_SPEED_Z;
 	chassis_move_init->wz_min_speed = -NORMAL_MAX_ROTATION_SPEED_Z;
-}
-
-
-static void chassis_set_mode(chassis_move_t *chassis_move_mode)
-{
-    if (chassis_move_mode == NULL)
-    {
-        return;
-    }
-    chassis_behaviour_mode_set(chassis_move_mode);
-}
-void chassis_behaviour_mode_set(chassis_move_t *chassis_move_mode)
-{
-    if (chassis_move_mode == NULL)
-    {
-        return;
-    }
-	//底盘
-    if (switch_is_up(chassis_move_mode->chassis_RC->rc.s[CHASSIS_RIGHT_LEVER]))        //上
-    {
-        chassis_behaviour_mode_1 = CHASSIS_HIGH_RATIO;
-    }
-    else if (switch_is_mid(chassis_move_mode->chassis_RC->rc.s[CHASSIS_RIGHT_LEVER]))  //中
-    {
-        chassis_behaviour_mode_1 = CHASSIS_MIDDLE_RATIO;
-    }
-    else if (switch_is_down(chassis_move_mode->chassis_RC->rc.s[CHASSIS_RIGHT_LEVER])) //下
-    {
-        chassis_behaviour_mode_1 = CHASSIS_LOW_RATIO;
-    }
-	  //云台
 }
 
 
@@ -148,7 +128,8 @@ void chassis_feedback_update(chassis_move_t *chassis_move_update)
 	chassis_move_update->rotation_motor_measure.speed =
 		chassis_move_update->rotation_motor_measure.motor_measure_DJI->speed_rpm;
 
-	chassis_move_update->wz = chassis_move_update->rotation_motor_measure.speed / 19 / 7 * 3; 
+	chassis_move_update->wz =
+		chassis_move_update->rotation_motor_measure.speed / RPM_RATIO;
 }
 
 
@@ -161,57 +142,16 @@ static void chassis_set_contorl(chassis_move_t *chassis_move_control)
         return;
     }
 	 
-//	fp32 vx0_set = 0.0f, vx1_set = 0.0f, wz_set = 0.0f;
-//	
-//	//底盘
-//	if (chassis_move_control->chassis_mode_1 == LOW_MOVE)
-//    {
-//    //平移
-//		if(chassis_move_control->chassis_RC->rc.ch[1]>100 && (chassis_move_control->chassis_RC->rc.ch[0]<600 && chassis_move_control->chassis_RC->rc.ch[0]>-600))
-//		{
-//			vx0_set =RPM_Second;vx1_set = -RPM_Second;	
-//		}
-//		else if(chassis_move_control->chassis_RC->rc.ch[1]<-100 && (chassis_move_control->chassis_RC->rc.ch[0]<600 && chassis_move_control->chassis_RC->rc.ch[0]>-600))
-//		{
-//			vx0_set =-RPM_Second;vx1_set = RPM_Second;
-//		}
-//		//旋转
-//		else if(chassis_move_control->chassis_RC->rc.ch[0]>600)
-//		{
-//			vx0_set =RPM_Second;vx1_set = RPM_Second;
-//		}
-//		else if (chassis_move_control->chassis_RC->rc.ch[0]<-600)
-//		{
-//			vx0_set =-RPM_Second;vx1_set = -RPM_Second;
-//		}
-//	
-//		else
-//		{
-//			vx0_set = 0; vx1_set = 0;
-//		}
-
-//		  chassis_move_control->vx0_set[0] = vx0_set;
-//	  	chassis_move_control->vx1_set[0] = vx1_set;
-
-//	    chassis_move_control->motor_chassis_measure[0].speed_set = chassis_move_control->vx0_set[0];
-//	    chassis_move_control->motor_chassis_measure[1].speed_set = chassis_move_control->vx1_set[0];			
-//    }
-
-
 
   float rpm = RPM_FORWARD_RATIO * move_speed;
 	//y轴速度
-	if(!cmd_stop_move)//停止移动
-	{
-		v0y[0] = 0; v1y[0] = 0;
-	}
-	else if(cmd_move)//前进
+	if(cmd_move && !cmd_u_move)//前进
 	{
 		v0y[0] = rpm; v1y[0] = -rpm;	
 	}
-	else if(!cmd_move)//后退
+	else if(cmd_u_move && !cmd_move)//后退
 	{
-		v0y[0] = -rpm; v1y[0] = rpm;	
+		v0y[0] = -rpm; v1y[0] = rpm;
 	}
 	else
 	{		
@@ -220,7 +160,7 @@ static void chassis_set_contorl(chassis_move_t *chassis_move_control)
 
 	
 	//x轴速度   可以优化控制器分辨逻辑，懒得弄了
-	if((chassis_move_control->chassis_RC->rc.ch[0] >= 50 || chassis_move_control->chassis_RC->rc.ch[0] <= -50) || (lr_joystick >= 100 || lr_joystick <= -100))
+	if(lr_joystick >= 100 || lr_joystick <= -100)
 	{
 		v0x_set = lr_joystick /660.0f * rpm * lr_move_sensitivity;
 		v1x_set = lr_joystick /660.0f * rpm * lr_move_sensitivity;
@@ -232,8 +172,8 @@ static void chassis_set_contorl(chassis_move_t *chassis_move_control)
 	
 	if(v0y[1] != v0y[0] || v1y[1] != v1y[0])
 	{
-		S_Curve_Ramp_Init(&motor1_ramp, v0y[0], motor1_ramp.current_speed, 10);
-		S_Curve_Ramp_Init(&motor2_ramp, v1y[0], motor2_ramp.current_speed, 10);
+		S_Curve_Ramp_Init(&motor1_ramp, v0y[0], motor1_ramp.current_speed, 5);
+		S_Curve_Ramp_Init(&motor2_ramp, v1y[0], motor2_ramp.current_speed, 5);
 		v0y[1] = v0y[0]; v1y[1] = v1y[0];		
 	}
 	
@@ -251,7 +191,7 @@ static void chassis_set_contorl(chassis_move_t *chassis_move_control)
 	chassis_move_control->motor_chassis_measure[0].speed_set = chassis_move_control->v0_set;
 	chassis_move_control->motor_chassis_measure[1].speed_set = chassis_move_control->v1_set;			
 
-float rotation_rpm = RPM_RATIO * rotation_speed;
+	float rotation_rpm = RPM_RATIO * rotation_speed;		
 	//云台
 
 	  if(cmd_clockwise && !cmd_counterclockwise)//顺时针旋转
@@ -276,15 +216,49 @@ static void chassis_control_loop(chassis_move_t *chassis_move_control_loop)
 //    PID_calc(&chassis_move_control_loop->chassis_motor_pid[0], chassis_move_control_loop->motor_chassis_measure[0].speed, chassis_move_control_loop->motor_chassis_measure[0].speed_set);
 //    PID_calc(&chassis_move_control_loop->chassis_motor_pid[1], chassis_move_control_loop->motor_chassis_measure[1].speed, chassis_move_control_loop->motor_chassis_measure[1].speed_set);
 	
-    PID_calc(&chassis_move_control_loop->chassis_motor_pid[0], chassis_move_control_loop->motor_chassis_measure[0].rpm, chassis_move_control_loop->motor_chassis_measure[0].speed_set);
-    PID_calc(&chassis_move_control_loop->chassis_motor_pid[1], chassis_move_control_loop->motor_chassis_measure[1].rpm, chassis_move_control_loop->motor_chassis_measure[1].speed_set);
+	if (chassis_move_control_loop->motor_chassis_measure[0].speed_set == 0.0f)
+	{
+		PID_clear(&chassis_move_control_loop->chassis_motor_pid[0]);
+		chassis_move_control_loop->motor_chassis_measure[0].give_current = 0;
+	}
+	else
+	{
+		PID_calc(&chassis_move_control_loop->chassis_motor_pid[0],
+			chassis_move_control_loop->motor_chassis_measure[0].rpm,
+			chassis_move_control_loop->motor_chassis_measure[0].speed_set);
+		chassis_move_control_loop->motor_chassis_measure[0].give_current =
+			(int16_t)(chassis_move_control_loop->chassis_motor_pid[0].out);
+	}
+
+	if (chassis_move_control_loop->motor_chassis_measure[1].speed_set == 0.0f)
+	{
+		PID_clear(&chassis_move_control_loop->chassis_motor_pid[1]);
+		chassis_move_control_loop->motor_chassis_measure[1].give_current = 0;
+	}
+	else
+	{
+		PID_calc(&chassis_move_control_loop->chassis_motor_pid[1],
+			chassis_move_control_loop->motor_chassis_measure[1].rpm,
+			chassis_move_control_loop->motor_chassis_measure[1].speed_set);
+		chassis_move_control_loop->motor_chassis_measure[1].give_current =
+			(int16_t)(chassis_move_control_loop->chassis_motor_pid[1].out);
+	}
 	
-    chassis_move_control_loop->motor_chassis_measure[0].give_current = (int16_t)(chassis_move_control_loop->chassis_motor_pid[0].out);
-    chassis_move_control_loop->motor_chassis_measure[1].give_current = (int16_t)(chassis_move_control_loop->chassis_motor_pid[1].out);	
-	
-	//云台
-    PID_calc(&chassis_move_control_loop->rotation_motor_pid, chassis_move_control_loop->rotation_motor_measure.speed, chassis_move_control_loop->rotation_motor_measure.speed_set);
-	  chassis_move_control_loop->rotation_motor_measure.give_current = (int16_t)(chassis_move_control_loop->rotation_motor_pid.out);
+	// 云台零速时滤除 GM4310 速度反馈的量化噪声，避免上电后电流正负抖动。
+	if (chassis_move_control_loop->rotation_motor_measure.speed_set == 0.0f &&
+		fabsf(chassis_move_control_loop->rotation_motor_measure.speed) <= ROTATION_MOTOR_SPEED_ZERO_DEADBAND_RPM)
+	{
+		PID_clear(&chassis_move_control_loop->rotation_motor_pid);
+		chassis_move_control_loop->rotation_motor_measure.give_current = 0;
+	}
+	else
+	{
+		PID_calc(&chassis_move_control_loop->rotation_motor_pid,
+			chassis_move_control_loop->rotation_motor_measure.speed,
+			chassis_move_control_loop->rotation_motor_measure.speed_set);
+		chassis_move_control_loop->rotation_motor_measure.give_current =
+			(int16_t)(chassis_move_control_loop->rotation_motor_pid.out);
+	}
 }
 
 fp32 fp32_constrain(fp32 Value, fp32 minValue, fp32 maxValue)

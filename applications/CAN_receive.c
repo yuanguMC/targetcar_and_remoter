@@ -19,7 +19,6 @@
 
 #include "CAN_receive.h"
 #include "main.h"
-#include "remote_control.h"
 #include "chassis_task.h"
 
 
@@ -31,7 +30,7 @@ extern CAN_HandleTypeDef hcan2;
 //position_value位置值     fault_value故障值     current_mode当前模式    
 #define get_motor_measure_M15(ptr, data)                                \
     {                                                                   \
-        (ptr)->rpm = ((data)[0] << 8 | (data)[1]) / 100;                \
+        (ptr)->rpm = (int16_t)((data)[0] << 8 | (data)[1]) / 100;      \
         (ptr)->given_current = (int16_t)((data)[2] << 8 | (data)[3]);   \
         (ptr)->position_value = (uint16_t)((data)[4] << 8 | (data)[5]); \
         (ptr)->fault_value = (data)[6]; 		                        \
@@ -53,8 +52,8 @@ extern CAN_HandleTypeDef hcan2;
   {                                                                \
     (ptr)->last_ecd = (ptr)->ecd;                                  \
     (ptr)->ecd = (uint16_t)((data)[0] << 8 | (data)[1]);           \
-    (ptr)->speed_rpm = (uint16_t)((data)[2] << 8 | (data)[3]);     \
-    (ptr)->given_current = (uint16_t)((data)[4] << 8 | (data)[5]); \
+    (ptr)->speed_rpm = (int16_t)((data)[2] << 8 | (data)[3]);      \
+    (ptr)->given_current = (int16_t)((data)[4] << 8 | (data)[5]);  \
     (ptr)->temperate = (data)[6];                                  \
   }
 
