@@ -5,7 +5,7 @@
 
 uint8_t key_data[KEY_COUNT] = {0};
 KeyInfo keyinfo={0};                                     //中断方法预留    
-static volatile uint8_t key_state[KEY_COUNT] = {0};      //仅对其进行电平检测
+static volatile uint8_t key_state[KEY_COUNT] = {0};      //记录按键功能状态
 static volatile uint8_t key_count[KEY_COUNT] = {0};      //记录按键按下次数
 volatile uint8_t move_speed_zero_flag = 0U;
 volatile uint8_t rotation_speed_zero_flag = 0U;
@@ -16,7 +16,7 @@ typedef struct {
     GPIO_PinState pressed_state;
 } KeyPinConfig;
 
-static const KeyPinConfig key_pin_config[KEY_COUNT] = {         //按键注册表，K9为预留按键
+static const KeyPinConfig key_pin_config[KEY_COUNT] = {         //按键注册表
     {GPIOA, K1_Pin, GPIO_PIN_RESET},
     {GPIOA, K2_Pin, GPIO_PIN_RESET},
     {GPIOB, K3_Pin, GPIO_PIN_RESET},
@@ -79,6 +79,8 @@ void Key_Init(void)
 	keyinfo.key_id=0;
     move_speed_zero_flag = 0U;
     rotation_speed_zero_flag = 0U;
+    key_state[KEY_E] = GPIO_PIN_RESET;
+    key_data[KEY_E] = GPIO_PIN_RESET;
 }
 
 void Key_ResetMoveSpeedCounts(void)
@@ -113,6 +115,9 @@ void readkey (void const * argument)
     uint8_t counter_state[KEY_COUNT] = {0};
     uint8_t last_state[KEY_COUNT] = {0};
 
+    counter_state[KEY_E] = Key_GPIO_Read(key_pin_config[KEY_E].pin);
+    last_state[KEY_E] = counter_state[KEY_E];
+
     while (1) {
 
         uint8_t index;
@@ -144,13 +149,19 @@ void readkey (void const * argument)
                         }
                     }
                     if (index == Clockwise || index == counterclockwise) {
+                        key_state[(index == Clockwise) ? counterclockwise : Clockwise] =
+                            GPIO_PIN_RESET;
+                        key_state[index] = (key_state[index] == GPIO_PIN_SET) ?
+                                           GPIO_PIN_RESET : GPIO_PIN_SET;
+                    } else if (index == KEY_E) {
                         key_state[index] = (key_state[index] == GPIO_PIN_SET) ?
                                            GPIO_PIN_RESET : GPIO_PIN_SET;
                     } else {
                         key_state[index] = GPIO_PIN_RESET;
                     }
                 } else {
-                    if (index != Clockwise && index != counterclockwise) {
+                    if (index != Clockwise && index != counterclockwise &&
+                        index != KEY_E) {
                         key_state[index] = GPIO_PIN_SET;
                     }
                 }
@@ -179,6 +190,7 @@ void Key_process(void)
     key_data[5] = key_count[SPEED_UP];
     key_data[6] = key_count[WSPEED_UP];
     key_data[7] = key_count[WSPEED_DOWN];
+    key_data[KEY_E] = (uint8_t)key_state[KEY_E];
 }
 
 

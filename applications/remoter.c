@@ -9,9 +9,12 @@
 //2026.9.21 v1.30                   Han          //功能完备，OLED屏幕能使用，数据说明显示不全
 
 //2026.10.25 v1.31                  Han          //将旋转方法改为按下切换
+
+//2026.10.31 v1.40                  Han          //启用预留按键【9】,按下时为输出目标速度乘一随时间变化正弦
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 #include "remoter.h"
 #include "main.h"
+#include <math.h>
 #include <string.h>
 #include "cmsis_os.h"
 
@@ -28,6 +31,8 @@ uint8_t tx_buffer[NRF24L01_TX_PACKET_WIDTH]={0};
 #define ROTATION_SPEED_STEP   5.0f      //角速度加减的步长（rpm)
 #define MOVE_SPEED_MAX        1.0f      //线速度最大值（rpm）
 #define ROTATION_SPEED_MAX    100.0f    //角速度最大值（rpm）
+#define ROTATION_MODULATION_ANGULAR_FREQUENCY 0.3f  //正弦调制角频率（rad/s）
+#define ROTATION_MODULATION_TWO_PI 6.28318530718f
 
 static float clamp_float(float value, float min_value, float max_value)         //限幅函数
 {
@@ -58,6 +63,10 @@ void date_pack_process(void)
     uint16_t move_down_count;
     uint16_t rotation_up_count;
     uint16_t rotation_down_count;
+    static uint32_t rotation_modulation_last_tick = 0U;
+    static float rotation_modulation_phase = 0.0f;
+    static uint8_t rotation_modulation_was_enabled = 0U;
+    uint32_t current_tick;
 
     Key_process();
 
@@ -87,6 +96,28 @@ void date_pack_process(void)
         rotation_speed_zero_flag = 0U;
     } else {
         rotation_speed_zero_flag = 1U;
+    }
+
+    current_tick = osKernelSysTick();
+    if (key_data[KEY_E] != 0U) {
+        if (rotation_modulation_was_enabled == 0U) {
+            rotation_modulation_phase = 0.0f;
+            rotation_modulation_last_tick = current_tick;
+            rotation_modulation_was_enabled = 1U;
+        } else {
+            uint32_t elapsed_ticks = current_tick - rotation_modulation_last_tick;
+
+            rotation_modulation_phase += ROTATION_MODULATION_ANGULAR_FREQUENCY *
+                                         (float)elapsed_ticks /
+                                         (float)osKernelSysTickFrequency;
+            while (rotation_modulation_phase >= ROTATION_MODULATION_TWO_PI) {
+                rotation_modulation_phase -= ROTATION_MODULATION_TWO_PI;
+            }
+            rotation_modulation_last_tick = current_tick;
+        }
+        rotation_speed = fabsf(rotation_speed * sinf(rotation_modulation_phase));
+    } else {
+        rotation_modulation_was_enabled = 0U;
     }
 
     memset(tx_buffer, 0, sizeof(tx_buffer));
