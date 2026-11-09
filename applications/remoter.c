@@ -27,12 +27,17 @@ void date_pack_process(void);   //打包数据包
 uint8_t tx_buffer[NRF24L01_TX_PACKET_WIDTH]={0};
 
 
-#define MOVE_SPEED_STEP       0.05f     //线速度加减的步长（rpm)
+#define TWO_PI                6.28318530718f
+#define WHEEL_RADIUS_M        0.1065f      //轮径
+#define MOVE_SPEED_STEP_MPS   0.25f      //线速度加减的步长（m/s）
+#define MOVE_SPEED_MAX_MPS    2.0f      //线速度最大值（m/s）
+#define MOVE_SPEED_RPM_TO_MPS (TWO_PI * WHEEL_RADIUS_M / 60.0f)
 #define ROTATION_SPEED_STEP   5.0f      //角速度加减的步长（rpm)
-#define MOVE_SPEED_MAX        1.0f      //线速度最大值（rpm）
 #define ROTATION_SPEED_MAX    100.0f    //角速度最大值（rpm）
 #define ROTATION_MODULATION_ANGULAR_FREQUENCY 0.3f  //正弦调制角频率（rad/s）
-#define ROTATION_MODULATION_TWO_PI 6.28318530718f
+#define ROTATION_MODULATION_TWO_PI TWO_PI
+#define MOVE_SPEED_STEP_RPM   (MOVE_SPEED_STEP_MPS / MOVE_SPEED_RPM_TO_MPS)
+#define MOVE_SPEED_MAX_RPM    (MOVE_SPEED_MAX_MPS / MOVE_SPEED_RPM_TO_MPS)
 
 static float clamp_float(float value, float min_value, float max_value)         //限幅函数
 {
@@ -63,6 +68,7 @@ void date_pack_process(void)
     uint16_t move_down_count;
     uint16_t rotation_up_count;
     uint16_t rotation_down_count;
+    float move_speed_rpm;
     static uint32_t rotation_modulation_last_tick = 0U;
     static float rotation_modulation_phase = 0.0f;
     static uint8_t rotation_modulation_was_enabled = 0U;
@@ -75,9 +81,11 @@ void date_pack_process(void)
     rotation_up_count = key_data[6];
     rotation_down_count = key_data[7];
 
-    move_speed = ((float)move_up_count - (float)move_down_count) * MOVE_SPEED_STEP;
+    move_speed_rpm = ((float)move_up_count - (float)move_down_count) *
+                     MOVE_SPEED_STEP_RPM;
     rotation_speed = ((float)rotation_up_count - (float)rotation_down_count) * ROTATION_SPEED_STEP;
-    move_speed = clamp_float(move_speed, 0.0f, MOVE_SPEED_MAX);
+    move_speed_rpm = clamp_float(move_speed_rpm, 0.0f, MOVE_SPEED_MAX_RPM);
+    move_speed = move_speed_rpm * MOVE_SPEED_RPM_TO_MPS;
     rotation_speed = clamp_float(rotation_speed, 0.0f, ROTATION_SPEED_MAX);
 
     if (move_speed == 0.0f ) {

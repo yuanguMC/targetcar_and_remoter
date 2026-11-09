@@ -79,6 +79,10 @@ void Key_Init(void)
 	keyinfo.key_id=0;
     move_speed_zero_flag = 0U;
     rotation_speed_zero_flag = 0U;
+    key_state[Clockwise] = GPIO_PIN_RESET;
+    key_state[counterclockwise] = GPIO_PIN_RESET;
+    key_data[2] = GPIO_PIN_RESET;
+    key_data[3] = GPIO_PIN_RESET;
     key_state[KEY_E] = GPIO_PIN_RESET;
     key_data[KEY_E] = GPIO_PIN_RESET;
 }
@@ -95,11 +99,23 @@ void Key_ResetRotationSpeedCounts(void)
     key_count[WSPEED_DOWN] = 0U;
 }
 
+static void key_sync_initial_state(uint8_t counter_state[KEY_COUNT],
+                                   uint8_t last_state[KEY_COUNT])
+{
+    counter_state[Clockwise] = Key_GPIO_Read(key_pin_config[Clockwise].pin);
+    last_state[Clockwise] = counter_state[Clockwise];
+    counter_state[counterclockwise] =
+        Key_GPIO_Read(key_pin_config[counterclockwise].pin);
+    last_state[counterclockwise] = counter_state[counterclockwise];
+    counter_state[KEY_E] = Key_GPIO_Read(key_pin_config[KEY_E].pin);
+    last_state[KEY_E] = counter_state[KEY_E];
+}
+
 /**
  * @brief  按键扫描处理线程函数
  * 
  * @details 该函数作为RTOS线程运行，持续扫描所有按键的状态。采用两次采样去抖算法，
- *          在5ms间隔内读取两次按键状态，只有当两次读数一致时才认为状态有效。
+ *          在消抖延时前后读取所有按键，只有两次读数一致时才认为状态有效。
  *          检测到按键状态变化时，更新全局按键状态数组key_state[]，并对前4个按键
  *          (index 0-3)的按下次数进行计数。
  * 
@@ -107,7 +123,7 @@ void Key_ResetRotationSpeedCounts(void)
  * @return 无返回值
  * 
  * @note   该函数包含无限循环，不应直接调用，应作为线程启动
- * @note   去抖延迟时间为5ms，可根据实际需求调整
+ * @note   消抖延迟时间由KEY_DEBOUNCE_DELAY_TICKS配置
  * @note   key_count[]仅对前4个按键(index 0-3)进行计数
  */
 void readkey (void const * argument)    
@@ -115,22 +131,25 @@ void readkey (void const * argument)
     uint8_t counter_state[KEY_COUNT] = {0};
     uint8_t last_state[KEY_COUNT] = {0};
 
-    counter_state[KEY_E] = Key_GPIO_Read(key_pin_config[KEY_E].pin);
-    last_state[KEY_E] = counter_state[KEY_E];
+    key_sync_initial_state(counter_state, last_state);
 
     while (1) {
 
         uint8_t index;
-        uint8_t key_state_first;
-        uint8_t key_state_second;
+        uint8_t key_state_first[KEY_COUNT];
+        uint8_t key_state_second[KEY_COUNT];
 
         for (index = 0; index < KEY_COUNT; index++) {
-            key_state_first =  Key_GPIO_Read(key_pin_config[index].pin);    
-            osDelay(5);
-            key_state_second = Key_GPIO_Read(key_pin_config[index].pin);
+            key_state_first[index] = Key_GPIO_Read(key_pin_config[index].pin);
+        }
 
-            if (key_state_first == key_state_second) {
-                counter_state[index] = key_state_first;
+        osDelay(KEY_DEBOUNCE_DELAY_TICKS);
+
+        for (index = 0; index < KEY_COUNT; index++) {
+            key_state_second[index] = Key_GPIO_Read(key_pin_config[index].pin);
+
+            if (key_state_first[index] == key_state_second[index]) {
+                counter_state[index] = key_state_first[index];
             } else {
                 counter_state[index] = last_state[index];
             }
@@ -169,8 +188,6 @@ void readkey (void const * argument)
 
             last_state[index] = counter_state[index];
         }
-
-        osDelay(5);
     }
 }
 

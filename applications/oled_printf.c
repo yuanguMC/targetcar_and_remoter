@@ -30,7 +30,7 @@ void oled_task(void const * argument)
     OLED_Init();
     for(;;)
     {
-        (void)snprintf(speed_text, sizeof(speed_text), "当前速度:%.2f", move_speed);
+        (void)snprintf(speed_text, sizeof(speed_text), "当前速度:%.2fm/s", move_speed);
         (void)snprintf(rotation_text, sizeof(rotation_text), "当前旋转:%.2f", rotation_speed);
         OLED_NewFrame();
         OLED_PrintString(0, 0, speed_text, &font16x16_1, OLED_COLOR_NORMAL);
@@ -39,4 +39,3 @@ void oled_task(void const * argument)
         osDelay(1000);
     }
 }
-

@@ -9,7 +9,7 @@ uint8_t cmd_counterclockwise = 0;  // bit 3 : 逆时针旋转
 
 int16_t lr_joystick     = 0;       // short : 左右移动拨杆值
 
-float   move_speed      = 0.0f;    // float 0 : 移动速度
+float   move_speed      = 0.0f;    // float 0 : 移动速度（m/s）
 float   rotation_speed  = 0.0f;    // float 1 : 旋转速度
 float   lr_move_sensitivity  = 0.0f;    // float 2 : 左右移动灵敏度
 

@@ -5,6 +5,7 @@
 #include "main.h"
 
 #define KEY_COUNT 9
+#define KEY_DEBOUNCE_DELAY_TICKS 3U
 
 typedef struct {
     GPIO_TypeDef * key_sys;
