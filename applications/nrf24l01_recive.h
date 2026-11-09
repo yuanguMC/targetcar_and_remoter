@@ -3,7 +3,7 @@
 #include "struct_typedef.h"
 #include "nrf24l01.h"
 
-#define NRF24L01_LINK_TIMEOUT_MS 2000U
+#define NRF24L01_LINK_TIMEOUT_MS 100U
 
 extern uint8_t cmd_move             ;  // bit 0 : 前进
 extern uint8_t cmd_u_move        ;  // bit 1 : 后退

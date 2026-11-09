@@ -7,12 +7,14 @@
 #include "bluetooth_receive.h"
 
 #define PI 3.1415926535798932384626f   //圆周率
-#define Circumference 0.6754424205196  //轮子周长
+#define CHASSIS_WHEEL_RADIUS_M 0.1065f
+#define Circumference (2.0f * PI * CHASSIS_WHEEL_RADIUS_M)
+#define CHASSIS_S_CURVE_RAMP_TIME_MS 100.0f
 #define MODE_0 0X00
 #define MODE_1 0x01
 #define MODE_2 0x02
-//目标速度 * 比例 = 实际发送rpm
-#define RPM_FORWARD_RATIO 8883.0665912045f
+// 与 RPM->m/s 换算抵消，使遥控速度值直接对应底盘速度设定值（m/s）
+#define RPM_FORWARD_RATIO (1.0f / CHASSIS_MOTOR_RPM_TO_VECTOR_SEN)
 #define RPM_BACK_RATIO -8883.0665912045f
 #define RPM_RATIO  44.807f // 主动轮30，从动轮70，减速箱3591/187
 
@@ -26,8 +28,8 @@
 #define MAX_MOTOR_M15_CAN_CURRENT 32767.0f
 
 //M15 rpm转化成底盘速度(m/s)的比例，  
-#define M15_MOTOR_RPM_TO_VECTOR 0.0112573736753
-#define CHASSIS_MOTOR_RPM_TO_VECTOR_SEN M15_MOTOR_RPM_TO_VECTOR
+#define M15_MOTOR_RPM_TO_VECTOR (Circumference / 60.0f)
+#define CHASSIS_MOTOR_RPM_TO_VECTOR_SEN  M15_MOTOR_RPM_TO_VECTOR
 
 //M15 rpm转电流 比例，  
 #define M15_MOTOR_RPM_TO_CURRENT 156
@@ -47,12 +49,12 @@
 
 
 //底盘电机速度环PID
-#define M15_MOTOR_SPEED_PID_KP_1 1000.0F//400.0f
-#define M15_MOTOR_SPEED_PID_KI_1 0.5f
+#define M15_MOTOR_SPEED_PID_KP_1 (1000.0F / CHASSIS_MOTOR_RPM_TO_VECTOR_SEN)
+#define M15_MOTOR_SPEED_PID_KI_1 (0.5f / CHASSIS_MOTOR_RPM_TO_VECTOR_SEN)
 #define M15_MOTOR_SPEED_PID_KD_1 0.0f
 
-#define M15_MOTOR_SPEED_PID_KP_2 1000.0F//400.0f
-#define M15_MOTOR_SPEED_PID_KI_2 0.5f
+#define M15_MOTOR_SPEED_PID_KP_2 (1000.0F / CHASSIS_MOTOR_RPM_TO_VECTOR_SEN)
+#define M15_MOTOR_SPEED_PID_KI_2 (0.5f / CHASSIS_MOTOR_RPM_TO_VECTOR_SEN)
 #define M15_MOTOR_SPEED_PID_KD_2 0.0f
 
 #define M15_MOTOR_SPEED_PID_MAX_OUT MAX_MOTOR_M15_CAN_CURRENT
@@ -84,8 +86,8 @@ typedef struct
 	const motor_measure_t *motor_measure;
 	const motor_measure_t_DJI *motor_measure_DJI;
 	int16_t rpm;
-	fp32 speed;
-	fp32 speed_set;
+	fp32 speed; // 底盘电机 m/s，云台电机 rpm
+	fp32 speed_set; // 底盘电机 m/s，云台电机 rpm
 	int16_t give_current;//发送的值
 	int16_t current;//返回的电流值
 	
@@ -166,7 +168,7 @@ typedef enum
   */
 extern void chassis_behaviour_mode_set(chassis_move_t *chassis_move_mode);
 
-/**
+/*
   * @brief          设置控制量.根据不同底盘控制模式，三个参数会控制不同运动.在这个函数里面，会调用不同的控制函数.
   * @param[out]     vx_set, 通常控制纵向移动.
   * @param[out]     vy_set, 通常控制横向移动.

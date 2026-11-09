@@ -124,7 +124,6 @@ void chassis_feedback_update(chassis_move_t *chassis_move_update)
   chassis_move_update->vx = (chassis_move_update->motor_chassis_measure[0].speed + chassis_move_update->motor_chassis_measure[1].speed) * MOTOR_SPEED_TO_CHASSIS_SPEED_VX;
 	
 	// 云台
-	// PID 统一使用 rpm，避免与 speed_set 的 rpm 单位不一致
 	chassis_move_update->rotation_motor_measure.speed =
 		chassis_move_update->rotation_motor_measure.motor_measure_DJI->speed_rpm;
 
@@ -143,15 +142,15 @@ static void chassis_set_contorl(chassis_move_t *chassis_move_control)
     }
 	 
 
-  float rpm = RPM_FORWARD_RATIO * move_speed;
+  float speed_mps = RPM_FORWARD_RATIO * move_speed * CHASSIS_MOTOR_RPM_TO_VECTOR_SEN;
 	//y轴速度
 	if(cmd_move && !cmd_u_move)//前进
 	{
-		v0y[0] = rpm; v1y[0] = -rpm;	
+		v0y[0] = speed_mps; v1y[0] = -speed_mps;
 	}
 	else if(cmd_u_move && !cmd_move)//后退
 	{
-		v0y[0] = -rpm; v1y[0] = rpm;
+		v0y[0] = -speed_mps; v1y[0] = speed_mps;
 	}
 	else
 	{		
@@ -162,8 +161,8 @@ static void chassis_set_contorl(chassis_move_t *chassis_move_control)
 	//x轴速度   可以优化控制器分辨逻辑，懒得弄了
 	if(lr_joystick >= 100 || lr_joystick <= -100)
 	{
-		v0x_set = lr_joystick /660.0f * rpm * lr_move_sensitivity;
-		v1x_set = lr_joystick /660.0f * rpm * lr_move_sensitivity;
+		v0x_set = lr_joystick /660.0f * speed_mps * lr_move_sensitivity;
+		v1x_set = lr_joystick /660.0f * speed_mps * lr_move_sensitivity;
 	}
 	else
 	{
@@ -172,8 +171,8 @@ static void chassis_set_contorl(chassis_move_t *chassis_move_control)
 	
 	if(v0y[1] != v0y[0] || v1y[1] != v1y[0])
 	{
-		S_Curve_Ramp_Init(&motor1_ramp, v0y[0], motor1_ramp.current_speed, 5);
-		S_Curve_Ramp_Init(&motor2_ramp, v1y[0], motor2_ramp.current_speed, 5);
+		S_Curve_Ramp_Init(&motor1_ramp, v0y[0], motor1_ramp.current_speed, CHASSIS_S_CURVE_RAMP_TIME_MS);
+		S_Curve_Ramp_Init(&motor2_ramp, v1y[0], motor2_ramp.current_speed, CHASSIS_S_CURVE_RAMP_TIME_MS);
 		v0y[1] = v0y[0]; v1y[1] = v1y[0];		
 	}
 	
@@ -224,7 +223,7 @@ static void chassis_control_loop(chassis_move_t *chassis_move_control_loop)
 	else
 	{
 		PID_calc(&chassis_move_control_loop->chassis_motor_pid[0],
-			chassis_move_control_loop->motor_chassis_measure[0].rpm,
+			chassis_move_control_loop->motor_chassis_measure[0].speed,
 			chassis_move_control_loop->motor_chassis_measure[0].speed_set);
 		chassis_move_control_loop->motor_chassis_measure[0].give_current =
 			(int16_t)(chassis_move_control_loop->chassis_motor_pid[0].out);
@@ -238,7 +237,7 @@ static void chassis_control_loop(chassis_move_t *chassis_move_control_loop)
 	else
 	{
 		PID_calc(&chassis_move_control_loop->chassis_motor_pid[1],
-			chassis_move_control_loop->motor_chassis_measure[1].rpm,
+			chassis_move_control_loop->motor_chassis_measure[1].speed,
 			chassis_move_control_loop->motor_chassis_measure[1].speed_set);
 		chassis_move_control_loop->motor_chassis_measure[1].give_current =
 			(int16_t)(chassis_move_control_loop->chassis_motor_pid[1].out);
@@ -319,7 +318,7 @@ float S_Curve_Ramp_Calc(S_Curve_Ramp_t *ramp, uint32_t dt_ms)
 	ramp->current_speed = ramp->last_speed +
 						  (ramp->target_speed - ramp->last_speed) * progress;
 
-	if (fabsf(ramp->current_speed) < 0.01f) {
+	if (fabsf(ramp->current_speed) < 0.01f * CHASSIS_MOTOR_RPM_TO_VECTOR_SEN) {
 		ramp->current_speed = 0.0f;
 	}
 
